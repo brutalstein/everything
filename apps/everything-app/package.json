@@ -22,7 +22,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^5.1.4",
     "electron-vite": "^5.0.0",
-    "typescript": "^5.8.3",
+    "typescript": "^7.0.2",
     "vite": "^7.0.0"
   },
   "engines": {
