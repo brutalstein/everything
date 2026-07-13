@@ -114,7 +114,7 @@ jobs:
       - name: Create checksum
         run: sha256sum everything-source.zip > everything-source.zip.sha256
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: everything-source-${{ github.ref_name }}
           path: |
