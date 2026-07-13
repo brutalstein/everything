@@ -1,0 +1,47 @@
+workspace_path = "."
+data_dir = ".everything"
+
+[model]
+backend = "Ollama"
+model_name = "qwen2.5-coder:7b"
+binary = "ollama"
+keep_alive = "10m"
+hide_thinking = true
+fallback_policy = "Reported"
+timeout_millis = 180000
+max_output_bytes = 4000000
+# Optional capability overrides for models whose metadata cannot be inferred.
+# context_window_tokens = 32768
+# safe_context_tokens = 12000
+
+[graph]
+max_impact_depth = 3
+
+[tools]
+trust_mode = "TrustedWorkspace"
+os_sandbox_enabled = true
+allowed_programs = ["cargo", "rustc", "python", "python3", "pytest", "ruff", "node", "npm", "pnpm", "yarn", "git", "make", "cmake", "ninja", "meson", "go", "gofmt", "gcc", "g++", "clang", "clang++", "cc", "c++", "java", "javac", "mvn", "gradle", "dotnet", "msbuild", "swift", "swiftc"]
+default_timeout_millis = 120000
+max_output_bytes = 1000000
+
+[autonomy]
+scheduler_enabled = true
+scheduler_poll_millis = 1000
+max_concurrency = 2
+oauth_callback_port = 43821
+
+[connectors]
+http_timeout_millis = 30000
+max_response_bytes = 4000000
+allow_custom_connectors = false
+
+[research]
+enabled = true
+auto_research = true
+searxng_url = "http://127.0.0.1:8888"
+keyless_search_fallback = true
+timeout_millis = 20000
+max_response_bytes = 2000000
+max_document_bytes = 1000000
+cache_ttl_millis = 21600000
+user_agent = "EverythingResearch/0.3 (+local-first)"

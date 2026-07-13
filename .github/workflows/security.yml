@@ -1,0 +1,47 @@
+name: Dependency Security
+
+on:
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rust-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  node-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/everything-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/everything-app/package-lock.json
+      - run: npm ci
+      - run: npm audit --audit-level=high
+
+  python-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python/everything_control
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install ".[dev]" pip-audit
+      - run: python -m pip_audit

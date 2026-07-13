@@ -1,0 +1,24 @@
+[package]
+name = "everything-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+blake3.workspace = true
+everything-adapters = { path = "../everything-adapters" }
+everything-domain = { path = "../everything-domain" }
+everything-connectors = { path = "../everything-connectors" }
+everything-graph = { path = "../everything-graph" }
+everything-memory = { path = "../everything-memory" }
+everything-research = { path = "../everything-research" }
+everything-skills = { path = "../everything-skills" }
+everything-state = { path = "../everything-state" }
+everything-tools = { path = "../everything-tools" }
+everything-verifier = { path = "../everything-verifier" }
+libc.workspace = true
+regex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true

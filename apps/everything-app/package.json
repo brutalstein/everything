@@ -1,0 +1,32 @@
+{
+  "name": "everything-app",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Desktop control plane for the Everything AI Runtime.",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "npm exec electron-vite dev",
+    "build": "npm exec electron-vite build",
+    "preview": "npm exec electron-vite preview",
+    "typecheck": "npm exec tsc -- --noEmit"
+  },
+  "dependencies": {
+    "electron": "43.1.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.13.5",
+    "@types/node": "^24.0.10",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^5.1.4",
+    "electron-vite": "^5.0.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  }
+}

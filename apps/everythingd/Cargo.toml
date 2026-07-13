@@ -1,0 +1,18 @@
+[package]
+name = "everythingd"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+axum.workspace = true
+clap.workspace = true
+everything-domain = { path = "../../crates/everything-domain" }
+everything-graph = { path = "../../crates/everything-graph" }
+everything-runtime = { path = "../../crates/everything-runtime" }
+futures-util.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tokio-stream.workspace = true

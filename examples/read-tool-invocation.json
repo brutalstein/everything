@@ -1,0 +1,9 @@
+{
+  "run_id": "REPLACE_WITH_EXISTING_RUN_ID",
+  "tool_id": "workspace.read_file",
+  "input": {
+    "path": "README.md"
+  },
+  "approval_granted": false,
+  "timeout_millis": 30000
+}

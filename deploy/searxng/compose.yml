@@ -1,0 +1,24 @@
+services:
+  searxng:
+    image: ${EVERYTHING_SEARXNG_IMAGE:-docker.io/searxng/searxng:latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${EVERYTHING_SEARXNG_PORT:-8888}:8080"
+    volumes:
+      - "${EVERYTHING_SEARXNG_SETTINGS:-./settings.yml}:/etc/searxng/settings.yml:ro"
+    environment:
+      SEARXNG_SETTINGS_PATH: /etc/searxng/settings.yml
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /var/cache/searxng:size=64m,mode=0750
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null 'http://127.0.0.1:8080/search?q=everything&format=json' || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

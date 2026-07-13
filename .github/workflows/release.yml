@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.0
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/everything-app/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: python/everything_control/pyproject.toml
+      - name: Rust format
+        run: cargo fmt --all -- --check
+      - name: Rust lint
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - name: Rust tests
+        run: cargo test --locked --workspace --all-targets
+      - name: Rust release build
+        run: cargo build --locked --workspace --release
+      - name: Electron dependencies
+        working-directory: apps/everything-app
+        run: npm ci
+      - name: Electron typecheck
+        working-directory: apps/everything-app
+        run: npm run typecheck
+      - name: Electron build
+        working-directory: apps/everything-app
+        run: npm run build
+      - name: Electron production audit
+        working-directory: apps/everything-app
+        run: npm audit --omit=dev --audit-level=high
+      - name: Python dependencies
+        working-directory: python/everything_control
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]" tree-sitter tree-sitter-rust
+      - name: Python tests
+        working-directory: python/everything_control
+        run: python -m pytest
+      - name: Python package
+        working-directory: python/everything_control
+        run: python -m build
+      - name: Version consistency
+        run: python scripts/check_versions.py
+      - name: Static Rust contracts
+        run: python scripts/static_rust_check.py
+      - name: Static product smoke
+        run: python scripts/smoke_mvp.py --require-built-ui
+      - name: Installer contract smoke
+        run: python scripts/smoke_installers.py
+      - name: PowerShell syntax
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          [void][scriptblock]::Create((Get-Content -Raw install.ps1))
+          [void][scriptblock]::Create((Get-Content -Raw setup.ps1))
+          [void][scriptblock]::Create((Get-Content -Raw bootstrap.ps1))
+          [void][scriptblock]::Create((Get-Content -Raw package-source.ps1))
+          [void][scriptblock]::Create((Get-Content -Raw scripts/verify.ps1))
+
+  publish:
+    name: Publish verified source release
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify tag and project versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="${GITHUB_REF_NAME#v}"
+          python scripts/check_versions.py --expected "$expected"
+      - name: Build deterministic source archive
+        run: python scripts/package_source.py --output everything-source.zip
+      - name: Validate source archive
+        run: python scripts/validate_source_archive.py everything-source.zip
+      - name: Verify deterministic archive
+        shell: bash
+        run: |
+          python scripts/package_source.py --output everything-source-second.zip
+          cmp everything-source.zip everything-source-second.zip
+      - name: Create checksum
+        run: sha256sum everything-source.zip > everything-source.zip.sha256
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: everything-source-${{ github.ref_name }}
+          path: |
+            everything-source.zip
+            everything-source.zip.sha256
+          retention-days: 30
+      - name: Attest source archive provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: everything-source.zip
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${GITHUB_REF_NAME}"
+          everything-source.zip
+          everything-source.zip.sha256
+          --verify-tag
+          --generate-notes
+          --title "Everything ${GITHUB_REF_NAME#v}"

@@ -1,0 +1,22 @@
+name: Feature request
+description: Propose a focused product or connector capability.
+title: "[feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Permissions, data, and safety impact
+      description: Describe external accounts, scopes, workspace mutation, or secrets involved.

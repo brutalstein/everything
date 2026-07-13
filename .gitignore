@@ -1,0 +1,49 @@
+# Rust
+/target/
+**/target/
+
+# Everything runtime state
+.everything/
+*.sqlite3
+*.sqlite3-*
+*.sqlite3-shm
+*.sqlite3-wal
+
+# Generated graph and test output
+graphify-out/
+witness-output/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# Node / Electron
+node_modules/
+out/
+release/
+dist-electron/
+*.asar
+*.blockmap
+*.AppImage
+*.dmg
+*.exe
+*.msi
+*.snap
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local logs and packages
+*.log
+everything-source.zip

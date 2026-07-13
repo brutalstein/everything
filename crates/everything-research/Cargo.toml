@@ -1,0 +1,14 @@
+[package]
+name = "everything-research"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+blake3.workspace = true
+everything-domain = { path = "../everything-domain" }
+regex.workspace = true
+rusqlite.workspace = true
+serde.workspace = true
+serde_json.workspace = true

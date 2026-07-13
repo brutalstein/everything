@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a reproducible Everything failure.
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not attach OAuth tokens, passwords, `.env` files, or private repository contents.
+  - type: input
+    id: version
+    attributes:
+      label: Everything version
+      placeholder: 0.2.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Windows 11, macOS Apple Silicon, macOS Intel, Ubuntu/Debian, Fedora/RHEL, Other Linux]
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics
+      description: Include `everything-cli doctor --json` output after removing private paths or account data.

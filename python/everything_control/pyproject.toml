@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling>=1.27", "editables>=0.5"]
+build-backend = "hatchling.build"
+
+[project]
+name = "everything-control"
+version = "0.3.0"
+description = "Typed Python control-plane client for the Everything Rust runtime."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "pydantic>=2.11,<3",
+]
+
+[project.scripts]
+everything-control = "everything_control.console:main"
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.2",
+    "editables>=0.5",
+    "pytest>=8.3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/everything_control"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,0 +1,6 @@
+# Optional example for Windows hosts using the GNU Rust target.
+# Copy only the target section you actually need into .cargo/config.toml.
+# Do not commit machine-specific rustc/rustdoc paths or force a default target.
+
+[target.x86_64-pc-windows-gnu]
+linker = "gcc"

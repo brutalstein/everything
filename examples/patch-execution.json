@@ -1,0 +1,15 @@
+{
+  "objective": "Update the greeting and verify the workspace",
+  "relative_path": "demo.txt",
+  "expected_content_hash": "REPLACE_WITH_BLAKE3_HASH",
+  "replacement_content": "hello from Everything\n",
+  "verification_commands": [
+    {
+      "program": "cargo",
+      "args": ["test", "--workspace"],
+      "label": "Rust workspace tests",
+      "timeout_millis": 600000
+    }
+  ],
+  "approval_granted": true
+}

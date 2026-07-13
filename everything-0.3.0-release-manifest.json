@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "product": "Everything",
+  "version": "0.3.0",
+  "release_name": "Apex",
+  "date": "2026-07-13",
+  "capabilities": [
+    "impact_aware_code_graph",
+    "patch_preflight_and_postflight_impact",
+    "automatic_native_web_research",
+    "optional_local_searxng",
+    "bounded_research_cache",
+    "github_rest_and_graphql_control_plane",
+    "local_model_context_orchestration",
+    "transactional_single_command_install",
+    "durable_automation",
+    "skills_and_memory"
+  ],
+  "validation": {
+    "rust_format": "passed",
+    "rust_clippy_warnings": 0,
+    "rust_tests": {
+      "passed": 97,
+      "failed": 0
+    },
+    "rust_release_build": "passed_with_container_cflags_o0_for_bundled_c",
+    "rust_static_files": 65,
+    "release_daemon_health": "passed",
+    "runtime_doctor_without_ollama": "degraded_without_crash",
+    "python_tests": {
+      "passed": 29,
+      "failed": 0
+    },
+    "python_wheel": "passed",
+    "python_sdist": "passed",
+    "electron_typecheck": "passed",
+    "electron_build": "passed",
+    "electron_production_vulnerabilities": 0,
+    "installer_smoke": "passed",
+    "product_smoke": "passed",
+    "windows_full_setup": "not_run_non_windows_environment",
+    "live_ollama_and_provider_tests": "not_run_runtime_or_credentials_unavailable"
+  }
+}

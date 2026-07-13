@@ -1,0 +1,9 @@
+id = "review-helper"
+name = "Review Helper"
+version = "1.0.0"
+runtime_api = "v1"
+description = "Review a requested subsystem and report evidence-backed defects."
+workflow = "prompt"
+entrypoint = "prompt:SKILL.md"
+instructions_file = "SKILL.md"
+permissions = ["workspace.read"]

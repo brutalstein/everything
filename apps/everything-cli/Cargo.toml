@@ -1,0 +1,15 @@
+[package]
+name = "everything-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+everything-adapters = { path = "../../crates/everything-adapters" }
+everything-domain = { path = "../../crates/everything-domain" }
+everything-graph = { path = "../../crates/everything-graph" }
+everything-runtime = { path = "../../crates/everything-runtime" }
+serde.workspace = true
+serde_json.workspace = true

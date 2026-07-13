@@ -1,0 +1,11 @@
+[package]
+name = "everything-verifier"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+everything-domain = { path = "../everything-domain" }
+
+[dev-dependencies]
+serde_json.workspace = true
