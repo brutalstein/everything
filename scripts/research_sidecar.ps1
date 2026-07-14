@@ -13,7 +13,8 @@ if (-not (Test-Path $Settings)) {
     $template = Join-Path $Root "deploy\searxng\settings.yml"
     if (-not (Test-Path $template)) { throw "SearXNG settings template missing: $template" }
     $bytes = [byte[]]::new(32)
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
     $secret = -join ($bytes | ForEach-Object { $_.ToString("x2") })
     $content = (Get-Content -Raw $template).Replace("everything-local-loopback-only", $secret)
     [System.IO.File]::WriteAllText($Settings, $content, [System.Text.UTF8Encoding]::new($false))

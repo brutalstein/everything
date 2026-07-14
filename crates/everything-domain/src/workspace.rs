@@ -53,18 +53,13 @@ pub struct AdapterSummary {
     pub command: String,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DoctorCheckStatus {
+    #[default]
     Healthy,
     Degraded,
     Failed,
-}
-
-impl Default for DoctorCheckStatus {
-    fn default() -> Self {
-        Self::Healthy
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

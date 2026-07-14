@@ -45,13 +45,17 @@ def check_bash() -> None:
     for relative in scripts:
         path = ROOT / relative
         require(path.is_file(), f"missing shell script: {relative}")
-        result = run("bash", "-n", str(path))
+        syntax_target = relative if os.name == "nt" else str(path)
+        result = run("bash", "-n", syntax_target)
         require(result.returncode == 0, f"bash syntax failed for {relative}: {result.stdout}")
         if os.name != "nt":
             require(os.access(path, os.X_OK), f"shell script is not executable: {relative}")
 
     for relative in ("setup.sh", "install.sh"):
-        result = run(str(ROOT / relative), "--help")
+        if os.name == "nt":
+            result = run("bash", relative, "--help")
+        else:
+            result = run(str(ROOT / relative), "--help")
         require(result.returncode == 0, f"{relative} --help failed: {result.stdout}")
         require("Usage:" in result.stdout, f"{relative} help is incomplete")
 

@@ -186,10 +186,15 @@ class EverythingClient:
     def graph_change_impact(
         self, request: CodeGraphChangeImpactRequest
     ) -> CodeGraphChangeImpactReport:
+        body = request.model_dump(mode="json", exclude_none=True)
+        for target in body.get("targets", []):
+            file_path = target.get("file_path")
+            if file_path:
+                target["file_path"] = Path(file_path).as_posix()
         payload = self._request_json(
             "POST",
             "/v1/graph/change-impact",
-            body=request.model_dump(mode="json", exclude_none=True),
+            body=body,
         )
         return CodeGraphChangeImpactReport.model_validate(payload)
 

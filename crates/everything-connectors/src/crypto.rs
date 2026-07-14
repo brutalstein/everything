@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+#[cfg(unix)]
 use std::io::Read;
 
 pub fn random_bytes(length: usize) -> Result<Vec<u8>> {

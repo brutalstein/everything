@@ -180,66 +180,63 @@ impl ModularRuntime {
         let patch_running = self
             .tool_runtime
             .running_record(patch_invocation_id.clone(), &patch_request)?;
-        if !request.allow_repeat_failure {
-            if let Some(replay_key) = patch_running.replay_key.as_deref() {
-                if let Some(previous) = self
-                    .state_store
-                    .latest_failed_run_invocation_by_replay_key(replay_key)?
-                {
-                    let mut blocked_invocation = patch_running.clone();
-                    blocked_invocation.status = InvocationStatus::Failed;
-                    blocked_invocation.finished_at_epoch_millis = Some(now_millis());
-                    blocked_invocation.output = json!({
-                        "error": "identical failed patch transaction requires explicit override",
-                        "previous_run_id": previous.run_id.as_str(),
-                        "previous_invocation_id": previous.invocation_id.as_str(),
-                        "replay_key": replay_key,
-                    });
-                    blocked_invocation.result_summary = Some(
-                        "identical patch was already part of a failed run; blind replay blocked"
-                            .to_owned(),
-                    );
-                    blocked_invocation.failure_class = Some(FailureClass::Validation);
-                    blocked_invocation.error_code =
-                        Some(ErrorCode::new("repeat_failed_patch_blocked"));
-                    self.state_store.save_tool_invocation(&blocked_invocation)?;
-                    push_invocation_event(&mut journal, &blocked_invocation);
-                    journal.set_failure_class(FailureClass::Validation);
-                    journal.push_structured(
-                        "execution",
-                        "execution.replay_blocked",
-                        EventSeverity::Warning,
-                        "Blind patch replay blocked",
-                        format!(
-                            "previous_run={} previous_invocation={}",
-                            previous.run_id, previous.invocation_id
-                        ),
-                        blocked_invocation.output.clone(),
-                        "everything-runtime",
-                    );
-                    let verification_report =
-                        self.verifier.verify_patch(PatchVerificationContext {
-                            run_id: run_id.clone(),
-                            objective_present: !request.objective.trim().is_empty(),
-                            expected_hash_present: !request.expected_content_hash.trim().is_empty(),
-                            approval_granted: request.approval_granted,
-                            patch_invocation: blocked_invocation,
-                            diff_artifact_id: None,
-                            verification_steps: Vec::new(),
-                            rolled_back: false,
-                            rollback_error: None,
-                        });
-                    let verification_artifact = self.persist_execution_artifact(
-                        journal.run_id(),
-                        ArtifactKind::VerificationReport,
-                        "application/json",
-                        "deterministic-verifier",
-                        &serde_json::to_vec_pretty(&verification_report)?,
-                    )?;
-                    journal.add_artifact(verification_artifact.clone());
-                    self.state_store
-                        .save_journal(&journal.snapshot(RunStatus::Blocked, None))?;
-                    return Ok(PatchExecutionResponse {
+        if !request.allow_repeat_failure
+            && let Some(replay_key) = patch_running.replay_key.as_deref()
+            && let Some(previous) = self
+                .state_store
+                .latest_failed_run_invocation_by_replay_key(replay_key)?
+        {
+            let mut blocked_invocation = patch_running.clone();
+            blocked_invocation.status = InvocationStatus::Failed;
+            blocked_invocation.finished_at_epoch_millis = Some(now_millis());
+            blocked_invocation.output = json!({
+                "error": "identical failed patch transaction requires explicit override",
+                "previous_run_id": previous.run_id.as_str(),
+                "previous_invocation_id": previous.invocation_id.as_str(),
+                "replay_key": replay_key,
+            });
+            blocked_invocation.result_summary = Some(
+                "identical patch was already part of a failed run; blind replay blocked".to_owned(),
+            );
+            blocked_invocation.failure_class = Some(FailureClass::Validation);
+            blocked_invocation.error_code = Some(ErrorCode::new("repeat_failed_patch_blocked"));
+            self.state_store.save_tool_invocation(&blocked_invocation)?;
+            push_invocation_event(&mut journal, &blocked_invocation);
+            journal.set_failure_class(FailureClass::Validation);
+            journal.push_structured(
+                "execution",
+                "execution.replay_blocked",
+                EventSeverity::Warning,
+                "Blind patch replay blocked",
+                format!(
+                    "previous_run={} previous_invocation={}",
+                    previous.run_id, previous.invocation_id
+                ),
+                blocked_invocation.output.clone(),
+                "everything-runtime",
+            );
+            let verification_report = self.verifier.verify_patch(PatchVerificationContext {
+                run_id: run_id.clone(),
+                objective_present: !request.objective.trim().is_empty(),
+                expected_hash_present: !request.expected_content_hash.trim().is_empty(),
+                approval_granted: request.approval_granted,
+                patch_invocation: blocked_invocation,
+                diff_artifact_id: None,
+                verification_steps: Vec::new(),
+                rolled_back: false,
+                rollback_error: None,
+            });
+            let verification_artifact = self.persist_execution_artifact(
+                journal.run_id(),
+                ArtifactKind::VerificationReport,
+                "application/json",
+                "deterministic-verifier",
+                &serde_json::to_vec_pretty(&verification_report)?,
+            )?;
+            journal.add_artifact(verification_artifact.clone());
+            self.state_store
+                .save_journal(&journal.snapshot(RunStatus::Blocked, None))?;
+            return Ok(PatchExecutionResponse {
                         run_id,
                         status: status_name(RunStatus::Blocked),
                         patch_invocation_id,
@@ -256,8 +253,6 @@ impl ModularRuntime {
                             verification_artifact.artifact_id,
                         )),
                     });
-                }
-            }
         }
         self.state_store.save_tool_invocation(&patch_running)?;
         let (patch_response, receipt) = self

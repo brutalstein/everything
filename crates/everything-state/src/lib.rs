@@ -1212,6 +1212,8 @@ mod tests {
         assert_eq!(report.entries[0].0.run_id, "run-good");
         assert_eq!(report.corrupt_run_ids, vec!["run-bad"]);
 
+        drop(connection);
+        drop(store);
         std::fs::remove_dir_all(root).expect("cleanup");
     }
 
@@ -1246,6 +1248,8 @@ mod tests {
             .expect("journal");
         assert_eq!(loaded.events.len(), 1);
 
+        drop(connection);
+        drop(store);
         std::fs::remove_dir_all(root).expect("cleanup");
     }
 
@@ -1419,6 +1423,8 @@ mod tests {
         assert_eq!(invocations.len(), 1);
         assert_eq!(invocations[0].invocation_id.as_str(), "inv-good");
 
+        drop(connection);
+        drop(store);
         std::fs::remove_dir_all(root).expect("cleanup");
     }
 
@@ -1456,6 +1462,8 @@ mod tests {
         assert_eq!(artifacts.len(), 1);
         assert_eq!(artifacts[0].artifact_id, "artifact-good");
 
+        drop(connection);
+        drop(store);
         std::fs::remove_dir_all(root).expect("cleanup");
     }
 }

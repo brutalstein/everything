@@ -62,14 +62,14 @@ impl ResearchRuntime {
         validate_domains(&request.blocked_domains)?;
 
         let cache_key = search_cache_key(&query, request);
-        if !request.force_refresh {
-            if let Some(mut cached) = self.store.get_search(&cache_key, now_millis())? {
-                for source in &mut cached.sources {
-                    source.from_cache = true;
-                }
-                cached.cache_hits = cached.sources.len();
-                return Ok(cached);
+        if !request.force_refresh
+            && let Some(mut cached) = self.store.get_search(&cache_key, now_millis())?
+        {
+            for source in &mut cached.sources {
+                source.from_cache = true;
             }
+            cached.cache_hits = cached.sources.len();
+            return Ok(cached);
         }
 
         let search_started = Instant::now();
@@ -335,14 +335,13 @@ impl ResearchRuntime {
             "web research is disabled by runtime policy"
         );
         let parsed = ParsedUrl::parse(&request.url)?;
-        if !request.force_refresh {
-            if let Some(mut response) = self
+        if !request.force_refresh
+            && let Some(mut response) = self
                 .store
                 .get_document(&canonicalize_url(&request.url), now_millis())?
-            {
-                response.source.from_cache = true;
-                return Ok(response);
-            }
+        {
+            response.source.from_cache = true;
+            return Ok(response);
         }
         if !parsed.is_loopback() && !self.robots_allowed(&parsed)? {
             return Err(anyhow!(

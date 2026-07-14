@@ -67,15 +67,6 @@ function Add-ProcessPath([string]$Path) {
 
 function Refresh-ProcessPath {
     $paths = [System.Collections.Generic.List[string]]::new()
-    foreach ($scope in @("Machine", "User")) {
-        $value = [Environment]::GetEnvironmentVariable("Path", $scope)
-        foreach ($entry in @($value -split ';')) {
-            if ($entry -and -not $paths.Contains($entry)) { $paths.Add($entry) }
-        }
-    }
-    foreach ($entry in @($OriginalProcessPath -split ';')) {
-        if ($entry -and -not $paths.Contains($entry)) { $paths.Add($entry) }
-    }
     $known = @(
         (Join-Path $HOME ".cargo\bin"),
         (Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Links"),
@@ -91,6 +82,15 @@ function Refresh-ProcessPath {
     }
     foreach ($entry in $known) {
         if ($entry -and (Test-Path $entry) -and -not $paths.Contains($entry)) { $paths.Add($entry) }
+    }
+    foreach ($scope in @("Machine", "User")) {
+        $value = [Environment]::GetEnvironmentVariable("Path", $scope)
+        foreach ($entry in @($value -split ';')) {
+            if ($entry -and -not $paths.Contains($entry)) { $paths.Add($entry) }
+        }
+    }
+    foreach ($entry in @($OriginalProcessPath -split ';')) {
+        if ($entry -and -not $paths.Contains($entry)) { $paths.Add($entry) }
     }
     $env:Path = $paths -join ';'
 }
@@ -258,8 +258,10 @@ function Find-PythonExecutable {
     if ($launcher) {
         foreach ($selector in @("-3.13", "-3.12", "-3.11")) {
             try {
-                $resolved = (& $launcher.Source $selector -c "import sys; print(sys.executable)" 2>$null | Select-Object -First 1).Trim()
-                if ($LASTEXITCODE -eq 0 -and $resolved -and -not $candidates.Contains($resolved)) { $candidates.Add($resolved) }
+                $resolvedOutput = & $launcher.Source $selector -c "import sys; print(sys.executable)" 2>$null
+                $resolvedExitCode = $LASTEXITCODE
+                $resolved = if ($resolvedOutput) { (@($resolvedOutput)[0]).ToString().Trim() } else { "" }
+                if ($resolvedExitCode -eq 0 -and $resolved -and -not $candidates.Contains($resolved)) { $candidates.Add($resolved) }
             } catch {}
         }
     }
@@ -267,10 +269,17 @@ function Find-PythonExecutable {
     foreach ($candidate in $candidates) {
         if ($candidate -match '\\WindowsApps\\') { continue }
         try {
-            $version = (& $candidate -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')" 2>$null | Select-Object -First 1).Trim()
-            if ($LASTEXITCODE -eq 0 -and $version -match '^(\d+)\.(\d+)\.(\d+)$') {
+            $versionOutput = & $candidate -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')" 2>$null
+            $versionExitCode = $LASTEXITCODE
+            $version = if ($versionOutput) { (@($versionOutput)[0]).ToString().Trim() } else { "" }
+            if ($versionExitCode -eq 0 -and $version -match '^(\d+)\.(\d+)\.(\d+)$') {
+                $preferred = 0
+                if ($pythonRoot -and $candidate.StartsWith($pythonRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $preferred = 1
+                }
                 $valid += [pscustomobject]@{
                     Path = $candidate
+                    Preferred = $preferred
                     Major = [int]$Matches[1]
                     Minor = [int]$Matches[2]
                     Patch = [int]$Matches[3]
@@ -278,7 +287,7 @@ function Find-PythonExecutable {
             }
         } catch {}
     }
-    $best = $valid | Sort-Object -Property Major, Minor, Patch -Descending | Select-Object -First 1
+    $best = $valid | Sort-Object -Property Preferred, Major, Minor, Patch -Descending | Select-Object -First 1
     if ($best) { return $best.Path }
     return $null
 }
@@ -338,12 +347,43 @@ function Ensure-VisualCppBuildTools {
     Write-Step "Visual C++ derleme ortamı hazır"
 }
 
-function Wait-EverythingHealth([string]$Url, [int]$TimeoutSeconds = 30, [string]$ExpectedWorkspace = "") {
+function Normalize-ComparablePath([string]$PathValue) {
+    if (-not $PathValue) { return "" }
+    $fullPath = [System.IO.Path]::GetFullPath($PathValue)
+    if ($fullPath.StartsWith("\\?\UNC\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        return "\" + $fullPath.Substring(7)
+    }
+    if ($fullPath.StartsWith("\\?\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $fullPath.Substring(4)
+    }
+    return $fullPath
+}
+
+function Test-RustToolchainReady([string]$Toolchain) {
+    $checks = @(
+        @("rustc", "--version"),
+        @("cargo", "--version"),
+        @("rustfmt", "--version"),
+        @("clippy-driver", "--version")
+    )
+    foreach ($commandArgs in $checks) {
+        try {
+            $output = & rustup run $Toolchain @commandArgs 2>$null
+            $exitCode = $LASTEXITCODE
+            if ($exitCode -ne 0 -or -not $output) { return $false }
+        } catch {
+            return $false
+        }
+    }
+    return $true
+}
+
+function Wait-EverythingHealth([string]$Url, [int]$TimeoutSeconds = 90, [string]$ExpectedWorkspace = "") {
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $deadline) {
         try {
             $info = Invoke-RestMethod -Uri "$Url/v1/info" -TimeoutSec 1
-            $workspaceMatches = -not $ExpectedWorkspace -or ([System.IO.Path]::GetFullPath($info.workspace) -eq [System.IO.Path]::GetFullPath($ExpectedWorkspace))
+            $workspaceMatches = -not $ExpectedWorkspace -or (Normalize-ComparablePath $info.workspace) -eq (Normalize-ComparablePath $ExpectedWorkspace)
             if ($info.service -eq "everythingd" -and $workspaceMatches) { return }
         } catch { Start-Sleep -Milliseconds 250 }
     }
@@ -660,7 +700,13 @@ try {
     Require-Command "rustup" "Rustlang.Rustup" "Rustup" | Out-Null
     Write-Step "Rust $RustToolchain araç zinciri hazırlanıyor"
     & rustup toolchain install $RustToolchain --profile minimal --component rustfmt --component clippy
-    if ($LASTEXITCODE -ne 0) { throw "Rust $RustToolchain araç zinciri kurulamadı." }
+    if ($LASTEXITCODE -ne 0) {
+        if (Test-RustToolchainReady $RustToolchain) {
+            Write-Warning "Rust araç zinciri indirilemedi ancak $RustToolchain zaten kullanılabilir durumda; kurulum mevcut araç zinciriyle devam edecek."
+        } else {
+            throw "Rust $RustToolchain araç zinciri kurulamadı."
+        }
+    }
     $env:RUSTUP_TOOLCHAIN = $RustToolchain
     Refresh-ProcessPath
     if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) { throw "Rust kurulumu cargo komutunu sağlamadı." }

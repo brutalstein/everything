@@ -7,16 +7,11 @@ pub enum ModelBackend {
     Ollama,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ModelFallbackPolicy {
     Disabled,
+    #[default]
     Reported,
-}
-
-impl Default for ModelFallbackPolicy {
-    fn default() -> Self {
-        Self::Reported
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,16 +71,11 @@ impl Default for GraphSettings {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ToolTrustMode {
+    #[default]
     Guided,
     TrustedWorkspace,
-}
-
-impl Default for ToolTrustMode {
-    fn default() -> Self {
-        Self::Guided
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

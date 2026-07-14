@@ -353,6 +353,8 @@ mod tests {
         assert!(stats.historical_entities > 0);
         assert!(stats.historical_relations > 0);
 
+        drop(database);
+        drop(graph);
         std::fs::remove_dir_all(root).expect("cleanup workspace");
     }
 }

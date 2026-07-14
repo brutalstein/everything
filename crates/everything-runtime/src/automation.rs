@@ -21,6 +21,12 @@ static AUTOMATION_SEQUENCE: AtomicU64 = AtomicU64::new(1);
 static LOCAL_TIME_LOCK: Mutex<()> = Mutex::new(());
 const DAY_MILLIS: u128 = 86_400_000;
 
+#[cfg(windows)]
+#[link(name = "ucrt")]
+unsafe extern "C" {
+    fn _mktime64(time: *mut libc::tm) -> i64;
+}
+
 struct AutomationLeaseHeartbeat {
     stop: Option<mpsc::Sender<()>>,
     handle: Option<JoinHandle<()>>,
@@ -959,11 +965,7 @@ fn next_local_wall_clock(after: u128, weekdays: &[u8], hour: u8, minute: u8) -> 
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     let after_seconds = libc::time_t::try_from(after / 1_000).ok()?;
-    let local_pointer = unsafe { libc::localtime(&after_seconds) };
-    if local_pointer.is_null() {
-        return None;
-    }
-    let base = unsafe { local_pointer.read() };
+    let base = local_time_parts(after_seconds)?;
     for day_offset in 0..=8 {
         let mut candidate = base;
         candidate.tm_mday = candidate.tm_mday.saturating_add(day_offset);
@@ -971,7 +973,7 @@ fn next_local_wall_clock(after: u128, weekdays: &[u8], hour: u8, minute: u8) -> 
         candidate.tm_min = i32::from(minute);
         candidate.tm_sec = 0;
         candidate.tm_isdst = -1;
-        let candidate_seconds = unsafe { libc::mktime(&mut candidate) };
+        let candidate_seconds = mktime_local(&mut candidate);
         if candidate_seconds < 0 {
             continue;
         }
@@ -987,6 +989,38 @@ fn next_local_wall_clock(after: u128, weekdays: &[u8], hour: u8, minute: u8) -> 
         }
     }
     None
+}
+
+#[cfg(unix)]
+fn local_time_parts(seconds: libc::time_t) -> Option<libc::tm> {
+    let mut local = std::mem::MaybeUninit::<libc::tm>::uninit();
+    let pointer = unsafe { libc::localtime_r(&seconds, local.as_mut_ptr()) };
+    if pointer.is_null() {
+        None
+    } else {
+        Some(unsafe { local.assume_init() })
+    }
+}
+
+#[cfg(windows)]
+fn local_time_parts(seconds: libc::time_t) -> Option<libc::tm> {
+    let mut local = std::mem::MaybeUninit::<libc::tm>::uninit();
+    let status = unsafe { libc::localtime_s(local.as_mut_ptr(), &seconds) };
+    if status != 0 {
+        None
+    } else {
+        Some(unsafe { local.assume_init() })
+    }
+}
+
+#[cfg(unix)]
+fn mktime_local(candidate: &mut libc::tm) -> libc::time_t {
+    unsafe { libc::mktime(candidate) }
+}
+
+#[cfg(windows)]
+fn mktime_local(candidate: &mut libc::tm) -> libc::time_t {
+    unsafe { _mktime64(candidate) as libc::time_t }
 }
 
 fn next_wall_clock(

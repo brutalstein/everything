@@ -52,10 +52,10 @@ impl SkillRegistry {
         let database_path = database_path.into();
         let install_root = workspace_skill_root.into();
         let mut discovery_roots = Vec::new();
-        if let Some(user_root) = user_skill_root() {
-            if user_root != install_root {
-                discovery_roots.push((user_root, SkillSourceKind::User));
-            }
+        if let Some(user_root) = user_skill_root()
+            && user_root != install_root
+        {
+            discovery_roots.push((user_root, SkillSourceKind::User));
         }
         discovery_roots.push((install_root.clone(), SkillSourceKind::Workspace));
 

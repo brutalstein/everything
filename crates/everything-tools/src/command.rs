@@ -49,6 +49,7 @@ pub struct SafeCommandOutput {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum SandboxBackend {
+    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
     Bubblewrap,
     #[cfg(target_os = "macos")]
     SandboxExec,

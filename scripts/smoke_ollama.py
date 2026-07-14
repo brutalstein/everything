@@ -110,10 +110,14 @@ def main() -> int:
     configured = [item for item in models if item.get("configured")]
     if not configured:
         raise RuntimeError("no configured model was reported")
-    configured_name = configured[0].get("model_name")
-    print(f"configured model: {configured_name}")
-    if configured_name != args.model:
-        raise RuntimeError(f"expected configured model {args.model!r}, got {configured_name!r}")
+    configured_names = [
+        item.get("model_name") for item in configured if item.get("model_name")
+    ]
+    print(f"configured model: {configured_names[0]}")
+    if args.model not in configured_names:
+        raise RuntimeError(
+            f"expected configured model {args.model!r}, got {configured_names!r}"
+        )
 
     index = request(args.base_url, "POST", "/v1/graph/index", {}, timeout=args.timeout)
     print(

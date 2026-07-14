@@ -463,15 +463,15 @@ impl ConnectorRuntime {
                 warnings: descriptor.limitations,
             });
         }
-        if let Some(key) = request.idempotency_key.as_deref() {
-            if let Some(record) = self.store.get_idempotency(key)? {
-                anyhow::ensure!(
-                    record.provider == request.provider && record.action_id == request.action_id,
-                    "idempotency key belongs to a different connector action"
-                );
-                return serde_json::from_value(record.response)
-                    .context("stored connector response is corrupt");
-            }
+        if let Some(key) = request.idempotency_key.as_deref()
+            && let Some(record) = self.store.get_idempotency(key)?
+        {
+            anyhow::ensure!(
+                record.provider == request.provider && record.action_id == request.action_id,
+                "idempotency key belongs to a different connector action"
+            );
+            return serde_json::from_value(record.response)
+                .context("stored connector response is corrupt");
         }
 
         let started = now_millis();
@@ -1789,16 +1789,16 @@ fn oauth_verifier_key(provider: ConnectorProvider, state: &str) -> String {
 }
 
 fn parse_token_bundle(value: &Value) -> Result<TokenBundle> {
-    if value.get("access_token").is_none() {
-        if let Some(error) = value.get("error").and_then(Value::as_str) {
-            anyhow::bail!(
-                "OAuth token endpoint returned {error}: {}",
-                value
-                    .get("error_description")
-                    .and_then(Value::as_str)
-                    .unwrap_or_default()
-            );
-        }
+    if value.get("access_token").is_none()
+        && let Some(error) = value.get("error").and_then(Value::as_str)
+    {
+        anyhow::bail!(
+            "OAuth token endpoint returned {error}: {}",
+            value
+                .get("error_description")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+        );
     }
     serde_json::from_value(value.clone()).context("parse OAuth token response")
 }

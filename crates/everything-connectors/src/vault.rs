@@ -307,7 +307,7 @@ fn command_exists(program: &str) -> bool {
         }
         #[cfg(windows)]
         {
-            return directory.join(format!("{program}.exe")).is_file();
+            directory.join(format!("{program}.exe")).is_file()
         }
         #[cfg(not(windows))]
         false
